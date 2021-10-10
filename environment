@@ -1,0 +1,8 @@
+#!/bin/bash
+export USER_RWX=adm
+export USER_RX=usr
+export  PASS_RWX=adm9999
+export  PASS_RX=usr9999
+export  PASS_RWX_ENC=md5096fffbf7ac4f62e6d58f5cb4ec8b58d
+export PASS_RX_ENC=md5ebc3cdc601f21d3a293faaec4d4bc007
+
