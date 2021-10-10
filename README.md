@@ -4,19 +4,19 @@ CARTODB TECHNICAL INTERVIEW TEST
 
 * Endpoints implemented
 
-Endpoint1/ GET Endpoint for getting all postal codes (returns GeoJson)
-/postalCodes/
-Returs a GeoJson containing all the info in postal_codes table, in order to be represented by mapping software
-Geoms are considered to be represented in WGS84 lonlat format, aka EPSG:4326
+  - Endpoint1/ GET Endpoint for getting all postal codes (returns GeoJson)
+  /postalCodes/
+  Returs a GeoJson containing all the info in postal_codes table, in order to be represented by mapping software
+  Geoms are considered to be represented in WGS84 lonlat format, aka EPSG:4326
 
-Endpoint2/ GET Endpoint for getting summation of all turnovers in a postalCode during a period
-/totalTurnovers/{fromDate}/{toDate}/{zipCode}
+  - Endpoint2/ GET Endpoint for getting summation of all turnovers in a postalCode during a period
+  /totalTurnovers/{fromDate}/{toDate}/{zipCode}
 
-Example:
-/totalTurnovers/2015-01-01/2017-01-01/28028
+  Example:
+  /totalTurnovers/2015-01-01/2017-01-01/28028
 
-Expected fixed arguments date range, and postal code have been set up as path parameters.
-So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for second endpoint is:
+  Expected fixed arguments date range, and postal code have been set up as path parameters.
+  So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for second endpoint is:
 
         * Get postal_code_id primary key in postal_codes table related to postal code,
           it is cached from initialization
@@ -30,15 +30,16 @@ So, after receiving and cheking arguments (done by Pydantic), checking and deali
         * Final results go to TotalTurnoverResponse (serialized into JSON) object (which in fact has only an amount field)
         * In case of validation errors, a 422 HTTP code (non-processed entity) is issued, resulting in a Json that has a field containing deatils of fail.
 
-Endpoint3/ Endpoint for getting details of all turnovers in a postalCode during a period, grouping by group age, month, and gender
-/turnovers/{fromDate}/{toDate}/{zipCode}
+- Endpoint3/ Endpoint for getting details of all turnovers in a postalCode during a period, 
+  grouping by group age, month, and gender
+  /turnovers/{fromDate}/{toDate}/{zipCode}
 
-Example:
-/turnovers/2015-01-01/2017-01-01/28028
+  Example:
+  /turnovers/2015-01-01/2017-01-01/28028
 
-This endpoint is expected to be used for timeseries widgets.
-Expected fixed arguments date range, and postal code have been set up as path parameters.
-So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for third endpoint is:
+  This endpoint is expected to be used for timeseries widgets.
+  Expected fixed arguments date range, and postal code have been set up as path parameters.
+  So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for third endpoint is:
 
         * Get postal_code_id primary key in postal_codes table related to postal code,
           it is cached from initialization
@@ -54,15 +55,16 @@ So, after receiving and cheking arguments (done by Pydantic), checking and deali
         following fields: amount, p_month,p_age,p_gender,zipcode
         * In case of validation errors, a 422 HTTP code (non-processed entity) is issued, resulting in a Json that has a field containing deatils of fail.
 
-Endpoint4/ GET Endpoint for getting details of all turnovers in the postalcode which was clicked in the frontend (thus we have lat lon coordinates) during a period, grouping by group age, month, and gender
-/turnoversPoint/{fromDate}/{toDate}/{longitude}{latitude}
+- Endpoint4/ GET Endpoint for getting details of all turnovers in the postalcode which was 
+  clicked  in the frontend (thus we have lat lon coordinates) during a period, grouping by group age, month, and gender
+  /turnoversPoint/{fromDate}/{toDate}/{longitude}{latitude}
 
-Example:
-/turnoversPoint/2015-01-01/2017-10-01/-3.70256/40.4165
+  Example:
+  /turnoversPoint/2015-01-01/2017-10-01/-3.70256/40.4165
 
-This endpoint is expected to be used for showing details of postal codes clicked in frontend.
-Expected fixed arguments date range, longitude and latitude. They have been set up as path parameters.
-So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for third endpoint is:
+  This endpoint is expected to be used for showing details of postal codes clicked in frontend.
+  Expected fixed arguments date range, longitude and latitude. They have been set up as path parameters.
+  So, after receiving and cheking arguments (done by Pydantic), checking and dealing with authentication, the pseudocode for third endpoint is:
 
         
         * Consult database, parametrized query:
@@ -84,17 +86,17 @@ So, after receiving and cheking arguments (done by Pydantic), checking and deali
 
 * About authentication
 
-FastAPI endpoints have been protected using a simple JWT Authentication Bearer schema.
-By default it is disabled. Can be enabled by Settings.authEnabled (settings.py file).
+  FastAPI endpoints have been protected using a simple JWT Authentication Bearer schema.
+  By default it is disabled. Can be enabled by Settings.authEnabled (settings.py file).
 
-Logout is implemented including token in a denylist; as it is not permanent by the moment, a server reload would imply that a denied token could be used again. Lists of tokens/users should be stored permanently in a database system. Redis could be a good alternative too. This simple system has not a mechanism of refreshing tokens, either, an expired token would force to ask the API for a new one. FastAPI JWT extension can deal with refresh tokens, and store them in cookies. The current way is via Authentication Bearer header in HTTP.
+  Logout is implemented including token in a denylist; as it is not permanent by the moment, a server reload would imply that a denied token could be used again. Lists of tokens/users should be stored permanently in a database system. Redis could be a good alternative too. This simple system has not a mechanism of refreshing tokens, either, an expired token would force to ask the API for a new one. FastAPI JWT extension can deal with refresh tokens, and store them in cookies. The current way is via Authentication Bearer header in HTTP.
 
-User for this demo API is:  test / test
+  User for this demo API is:  test / test
 
-The API should be protected with HTTPS too. No interchange of sensitive information should be carried out without encrypted support.
-Uvicorn (the web server in which FastAPI is executed) has easy support for HTTPS. Certificate could be obtained via Let's Encrypt / Certbot, for instance
+  The API should be protected with HTTPS too. No interchange of sensitive information should be carried out without encrypted support.
+  Uvicorn (the web server in which FastAPI is executed) has easy support for HTTPS. Certificate could be obtained via Let's Encrypt / Certbot, for instance
 
-There are two endpoints for logging in and out:
+  There are two endpoints for logging in and out:
 
   * POST endpoint /login, requiring username and password parameters in a JSON request
     Returns JSON object with access_token 
@@ -109,32 +111,33 @@ There are two endpoints for logging in and out:
 
 * Deploy
 
-a/Vanilla Deploy
- * Build a virtualenv in downloaded folder
-   $ virtualenv .
+  a/Vanilla Deploy
+  * Build a virtualenv in downloaded folder
+    $ virtualenv .
 
-  * Activate environment:
-   $ source bin/activate   (bash)
-   $ . bin/activate (sh)
+    * Activate environment:
+    $ source bin/activate   (bash)
+    $ . bin/activate (sh)
 
- * Install requirements
-   $ pip3 install -r requirements.txt
+  * Install requirements
+    $ pip3 install -r requirements.txt
 
- * Run api inside uvicorn
-   $ uvicorn --reload --port 8000 main:app & disown
- 
- * Run streamlit 
+  * Run api inside uvicorn
+    $ uvicorn --reload --port 8000 main:app & disown
+  
+  * Run streamlit (not required)
 
-   $ streamlit run streamlit_folium_app.py & disown
+    $ streamlit run streamlit_folium_app.py & disown
 
-  Disown is a BASH extension, so if not running bash, we could use nohup
-  $ nohup uvicorn --reload --port 8000 main:app &
-  $ nohup streamlit run streamlit_app.py &
+    Disown is a BASH extension, so if not running bash, we could use nohup
+    $ nohup uvicorn --reload --port 8000 main:app &
+    $ nohup streamlit run streamlit_app.py &
    
 
 b/Docker Deployment
-Deployment can be done in a Docker container, building it from scratch with the offered Dockerfile.
-Image exposes two ports, 8000 for API, and 8001 for Streamlit.
+  Deployment can be done in a Docker container, building it from scratch with the offered 
+  Dockerfile.
+  Image exposes two ports, 8000 for API, and 8001 for Streamlit.
  
  * Building :
    docker build . -t coolgeo
@@ -144,14 +147,14 @@ Image exposes two ports, 8000 for API, and 8001 for Streamlit.
 
 * Streamlit visualization (Not finished due to some problems with maps)
 
-A minimal Streamlit application has been made for the sake of curiosity, and to be able to visualize easily results. Not fully functional app, tried to make a mock for endpoints, but folium under streamlit seems to be faulty and lacking interactivity. Should have been better to go ahead with a plain javascript mock, this is my fault. But i love Streamlit concept!
-
-Tests can also be performed via the excellent ThunderClient replacement for Postman inside Visual Studio Code.
+  A minimal Streamlit application has been made for the sake of curiosity, and to be able to visualize easily results. Not fully functional app, tried to make a mock for endpoints, but folium under streamlit seems to be faulty and lacking interactivity. Should have been better to go ahead with a plain javascript mock, this is my fault. But i love Streamlit concept!
 
 * Testing
-Unit tests, using for instance, Python unittest, have to be implemented.
+  Unit tests, using for instance, Python unittest, have to be implemented.
+  Tests can also be performed via the excellent ThunderClient replacement for Postman inside Visual Studio Code.
 
 * List of technolgies used
+
   - Python 3.8, virtualenv or conda for environment separation
   - Postgresql 11 with Postgis 2.5 under Debian 10
   - Tried to import data into database with GDAL's ogr2ogr, but seems to not understand geometries
@@ -169,7 +172,7 @@ Unit tests, using for instance, Python unittest, have to be implemented.
   - Streamlit for visualization. I really love Streamlit, it's possibilities are endless!
   - Docker for containerization and distribution
 
-* TO BE DONE
+* To be done
 
   - Go HTTPS, uvicorn and fastapi have no problems with https (Certbot and Let's encrypt for certificates, for example)
   - Improve checks for models 
