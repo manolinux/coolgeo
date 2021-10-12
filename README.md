@@ -183,3 +183,18 @@ b/Docker Deployment
 
 Manuel Cotallo
 10/10/2021
+
+
+Second commit:
+* Kepler gl backend for maps
+* Showing postal codes
+* Showing turnovers when a postal code is selected in left box for postal code.
+  Bidirectionality is not already working for leafmap.kepler. If you press in the map, you won't get that data transferred to left part of app.
+
+* Getting turnovers for selected zip code in left panel (in fact there are two layers at kepler map, Postal Codes and Turnovers). Data for a given timeseries is there, but no way to show a customized popup to show the info as stated in mock picture of app). Leafmap will evolve, and i think I'll get it soon ...
+
+* Postal codes endpoint has also a new param allowing recovery in distinct CRS (3857 instead of 43265, last path param of endpoint controls the srs numbered as EPSG code.)
+
+Manuel Cotallo
+12/20/2021
+
