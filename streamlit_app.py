@@ -1,16 +1,22 @@
 from pydantic.errors import DataclassTypeError
 import streamlit as st
-from streamlit_folium import folium_static
-from settings import Settings
+import streamlit.components.v1 as components
 from datetime import datetime,date
 import requests
-import leafmap.leafmap as leafmap
+import leafmap.kepler as leafmap
 import pandas as pd
 import json
 import sys
-from shapely import wkb
+from shapely.geometry import mapping, shape
 import requests
-import jinja2
+from geojson_pydantic import Feature, FeatureCollection
+from fastapi.encoders import jsonable_encoder
+import tempfile
+import geojson
+
+##Session state
+def setSessionState(key,value):
+        st.session_state[key] = value
 
 ##Recreate a text in container
 def stContainerText(container,text):
@@ -18,27 +24,44 @@ def stContainerText(container,text):
     with container:
         st.text(text)
 
+#get Geometry for postalCode
+def getGeometryFromPropertyAndValue(geojson,prop,val):
+    fc = geojson
+    features = fc['features']
+    try:
+        for ft in features:
+            if ft['properties'][prop] == int(val):
+                return ft['geometry']
+    #Non exisitng prop
+    except Exception as e:
+        st.error(str(e))
+    return None
+
 st.set_page_config(layout="wide")
 
 #Custom html for keeping some things
-s1 = """<input type="hidden" id="lon"/>"""
-s2 = """<input type="hidden" id="lat"/>"""
-s3 = """<input type="hidden" id="zipcode"/>"""
- 
-h1 = st.markdown(s1,unsafe_allow_html=True)
-h2 = st.markdown(s2,unsafe_allow_html=True)
-h3 = st.markdown(s3,unsafe_allow_html=True)
+#postalCodes in advance
+postalCodesData = requests.get('http://localhost:8000/postalCodes/4326').json()
+st.session_state['postalCodes'] = postalCodesData
+st.session_state['lon'] = -3.703889
+st.session_state['lat'] = 40.416667
+st.session_state['startDate'] = datetime.strptime('2015-01-01','%Y-%M-%d')
+st.session_state['endDate'] = datetime.strptime('2017-12-31','%Y-%M-%d')
+st.session_state['zipcode'] = '28013'
 
 
 col1, col2,col3 = st.columns((2,3,1))
 with col1:
     with st.form("Form 1"): 
-        d1 = st.date_input ("Start date" , value=datetime.strptime('2015-01-01','%Y-%M-%d') , min_value=datetime.strptime('2015-01-01','%Y-%M-%d'), 
-                max_value=datetime.strptime('2025-12-31','%Y-%M-%d') , key=None )
-        d2 = st.date_input ("End date" , value=datetime.strptime('2017-12-31','%Y-%M-%d') , min_value=datetime.strptime('2015-01-01','%Y-%M-%d'), 
-                max_value=datetime.strptime('2025-12-31','%Y-%M-%d') , key=None )
+        d1 = st.date_input ("Start date" , max_value=datetime.strptime('2017-12-31','%Y-%M-%d'), 
+                min_value=datetime.strptime('2015-01-01','%Y-%M-%d'), 
+                value=st.session_state["startDate"])
+        d2 = st.date_input("End date", min_value=datetime.strptime('2015-01-01','%Y-%M-%d'), 
+                max_value=datetime.strptime('2025-12-31','%Y-%M-%d'),
+                value=st.session_state["endDate"])
+                
 
-        cp = st.text_input("Selected zip code",value="28028")
+        cp = st.text_input("Selected zip code",value=st.session_state["zipcode"])
         b1 = st.form_submit_button("Go!")
         acumHeader = st.subheader('Acummulated')
         periodContainer = st.empty()
@@ -50,13 +73,16 @@ with col1:
             stContainerText(periodContainer,'Period: ' + datetime.strftime(d1,'%Y/%m/%d') + " - " + 
                         datetime.strftime(d2,'%Y/%m/%d'))
             stContainerText(valueContainer,'Value: N/A')
+            setSessionState("startDate", d1)
+            setSessionState("endDate", d2)
+        if cp:
+            setSessionState("zipcode",cp)
   
         #Button clicked?
         if b1:
             try:
                 totalTurnoversUrl = 'http://localhost:8000/totalTurnovers/{0}/{1}/{2}'.format(
-                datetime.strftime(d1,"%Y-%m-%d"),datetime.strftime(d2,"%Y-%m-%d"),cp)  
-
+                    datetime.strftime(d1,"%Y-%m-%d"),datetime.strftime(d2,"%Y-%m-%d"),cp)
                 response = requests.get(totalTurnoversUrl)
                 totalTurnovers = json.loads(response.text)
                 if response.status_code == 200:
@@ -73,7 +99,7 @@ with col1:
 
 with col2:
     #showing the map
-    style = {
+    style_1 = {
         "stroke": True,
         "color": "#0000ff",
         "weight": 2,
@@ -83,12 +109,62 @@ with col2:
         "fillOpacity": 0.1,
     }
 
-    hover_style = {"fillOpacity": 0.7}
-    m = leafmap.Map(center=[40, -3], zoom=10,
-        draw_control=False, measure_control=False, fullscreen_control=True, attribution_control=True)
-    m.add_geojson('http://localhost:8000/postalCodes',layer_name="Postal codes",
-            style=style,hover_style=hover_style)
-    m.to_streamlit(width=700, height=500)
+    hover_style_1 = {"fillOpacity": 0.7}
+
+
+    style_2 = {
+        "stroke": True,
+        "color": "#00ff00",
+        "weight": 2,
+        "opacity": 1,
+        "fill": True,
+        "fillColor": "#00ff00",
+        "fillOpacity": 0.1,
+    }
+
+    hover_style_2 = {"fillOpacity": 0.7}
+
+    DEFAULT_MAP_SPECS = dict(height=450, width=600) 
+    map_specs = DEFAULT_MAP_SPECS
+    m = leafmap.Map(center=[st.session_state["lat"], st.session_state["lon"]], zoom=13,
+                    height=map_specs['height'],
+                    width=map_specs['width'])
+    
+    m.add_geojson(postalCodesData,layer_name="Postal codes",
+            style=style_1,hover_style=hover_style_1)
+
+    #We obtain turnovers data for current postalCode
+    turnoversUrl = 'http://localhost:8000/turnovers/{0}/{1}/{2}'.format(
+            datetime.strftime(st.session_state["startDate"],'%Y-%m-%d'),
+            datetime.strftime(st.session_state["endDate"],'%Y-%m-%d'),cp)
+            
+    turnoversData = requests.get(turnoversUrl).json()
+    
+  
+    #And obtain geometry from cached geometries
+    turnoversGeometry = getGeometryFromPropertyAndValue(postalCodesData,
+                            "code", st.session_state["zipcode"])
+    #Now we mix turnoversData with geometry into a Feature, so that it can be added as Geojson layer
+    turnoversFeature = geojson.Feature(geometry=turnoversGeometry,
+                        properties= {id(x): x for x in turnoversData["rows"]})
+   
+    
+    (file,fileName)=tempfile.mkstemp(prefix='tmp')
+    with open(fileName,'w',encoding="utf-8") as file:
+        json.dump(turnoversFeature,file)
+    st.write(json.dumps(turnoversFeature))
+    m.add_geojson(fileName,layer_name="Turnovers",
+            style=style_2,hover_style=hover_style_2,)
+
+                            
+    components.html(
+        m.to_html(),
+        width=map_specs['width'] * 2,
+        height=map_specs['height'] * 1.5,
+        scrolling=False)
+    
+    #m.to_streamlit()
+    
     
 with col3:
     c1 = st.bar_chart(data=None, width=200, height=200, use_container_width=True)

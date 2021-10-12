@@ -6,7 +6,6 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Path, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime 
-from shapely import wkb
 from shapely.geometry import mapping, shape
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
@@ -15,7 +14,8 @@ import requests
 import logging
 import asyncio
 import asyncpg
-
+import pyproj
+from shapely.ops import transform
 
 ################## DATABASE STUFF ##################################
 
@@ -200,7 +200,7 @@ def create_app():
                         for record in resultSet:
                             turnovers.rows.append(TurnoverResponse(
                                 amount = record['amount'],
-                                p_month = datetime.strftime(record['p_month'],"%Y-%m%d"),
+                                p_month = datetime.strftime(record['p_month'],"%Y-%m-%d"),
                                 p_age = record['p_age'],
                                 p_gender = record['p_gender'],
                                 zipcode = zipCode
@@ -320,9 +320,12 @@ def create_app():
     postalCodes to be printed in a map
     """
 
-    @app.get("/postalCodes")
-    async def postalCodesEndpoint(Authorize: AuthJWT = Depends()):
+    @app.get("/postalCodes/{crs}")
+    async def postalCodesEndpoint(
+        crs : Optional[int] = 3587,
+        Authorize: AuthJWT = Depends()):
         
+
         #Authorization required/optional by settings
         if Settings.authEnabled:  Authorize.jwt_required()
         else: Authorize.jwt_optional()
@@ -330,8 +333,17 @@ def create_app():
         features = []
         
         for pc in app.postalCodes:
-            bbox = shape(geojson.loads(pc.get('geom'))).bounds
-            feature = Feature(geometry=json.loads(pc.get('geom')),
+            geometry = shape(json.loads(pc.get('geom')))
+            reprojection = pyproj.Transformer.from_proj(
+                    pyproj.Proj(init='epsg:4326'), # source coordinate system
+                    pyproj.Proj(init='epsg:{0}'.format(str(crs)))) # destination coordinate system
+
+            #Needed reproj?
+            if crs != 4326:
+                geometry = transform(reprojection.transform, geometry)  # apply projection
+            bbox = geometry.bounds
+            feature = Feature(
+                geometry = geometry,
                 properties={'id': pc.get('id'), 'code': pc.get('code')},
                 id=pc.get('id'),bbox=bbox)
             features.append(feature)

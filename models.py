@@ -84,6 +84,16 @@ class PostalCode(BaseModel):
     _ensure_postal_code: classmethod = validator("code", allow_reuse=True)(valPostalCode)
     _ensure_geom: validator("the_geom",allow_reuse=True)(valWkbGeom)
 
+
+
+"""
+  GeoJSON postalCode request
+"""
+
+class PostalCodeRequest(BaseModel):
+    #Coordinate reference system
+    crs : int
+
 """
   GeoJSON postalCodes response
 """
