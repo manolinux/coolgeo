@@ -1,5 +1,5 @@
 #Configuration class, all values are static
-
+import itertools
 
 class Settings:
 
@@ -9,6 +9,16 @@ class Settings:
     loginUrl = "{0}/login".format(baseUrl)
     logoutUrl = "{0}/logout".format(baseUrl)
     postalCodesUrl ='{0}/postalCodes'.format(baseUrl)
+
+    #Constants
+    GENDERS = ['M','F']
+    AGE_GROUPS = ["<=24","25-34","35-44","45-54","55-64",">=65"]
+
+    COMBINED_GROUPS_FIELDS = list(itertools.product(AGE_GROUPS,GENDERS))
+    COMBINED_GROUPS_DICT = dict.fromkeys([(x[0] + "-" + x[1]) 
+                    for x in COMBINED_GROUPS_FIELDS],0)
+   
+
     
     #Database
     databaseUrl = "postgresql://adm:adm9999@localhost:5432/coolgeo"

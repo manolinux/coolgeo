@@ -196,5 +196,19 @@ Second commit:
 * Postal codes endpoint has also a new param allowing recovery in distinct CRS (3857 instead of 43265, last path param of endpoint controls the srs numbered as EPSG code.)
 
 Manuel Cotallo
-12/20/2021
+10/12/2021
 
+Third commit:
+* Two layers in map: postal codes and turnovers per age and gender (calculated in the python
+  Streamlit app from turnoversEndpoint by postalCode). Second layer is dynamic, map refreshes 
+  when postalCode is changed
+* Map centers on centroid of selected postal code.
+* Each layer shows the fields it contains; "Turnovers per age and gender" has a field per 
+  combined age/gender group.
+* Should be fine to capture callback from clicking in the map and then refreshing calculations
+  (investigating if it is possible or not)
+* Bar/Timeseries widgets have not been added, soon to be.
+* Should delete temporary geojson files for add_geojson()
+
+Manuel Cotallo
+10/13/2021

@@ -13,6 +13,7 @@ from geojson_pydantic import Feature, FeatureCollection
 from fastapi.encoders import jsonable_encoder
 import tempfile
 import geojson
+from settings import Settings
 
 ##Session state
 def setSessionState(key,value):
@@ -23,6 +24,18 @@ def stContainerText(container,text):
     container.empty()
     with container:
         st.text(text)
+
+#process turnovers into groups by age and male/female
+def processTurnovers(tdata,postalCode):
+    combinedTurnovers = Settings.COMBINED_GROUPS_DICT
+    for index  in tdata.properties:
+        age = tdata.properties[index]["p_age"]
+        gender = tdata.properties[index]["p_gender"]
+        amount = tdata.properties[index]["amount"]
+        combinedTurnovers[age+"-"+gender] += amount
+        
+    return combinedTurnovers
+
 
 #get Geometry for postalCode
 def getGeometryFromPropertyAndValue(geojson,prop,val):
@@ -37,6 +50,10 @@ def getGeometryFromPropertyAndValue(geojson,prop,val):
         st.error(str(e))
     return None
 
+#get Geometry centroid
+def getGeometryCentroid(geom):
+    return shape(geom).centroid
+
 st.set_page_config(layout="wide")
 
 #Custom html for keeping some things
@@ -48,7 +65,8 @@ st.session_state['lat'] = 40.416667
 st.session_state['startDate'] = datetime.strptime('2015-01-01','%Y-%M-%d')
 st.session_state['endDate'] = datetime.strptime('2017-12-31','%Y-%M-%d')
 st.session_state['zipcode'] = '28013'
-
+st.session_state['turnovers'] = None
+st.session_state['turnoversByAgeAndGender'] = None
 
 col1, col2,col3 = st.columns((2,3,1))
 with col1:
@@ -109,7 +127,7 @@ with col2:
         "fillOpacity": 0.1,
     }
 
-    hover_style_1 = {"fillOpacity": 0.7}
+    hover_style = {"fillOpacity": 0.7}
 
 
     style_2 = {
@@ -122,39 +140,65 @@ with col2:
         "fillOpacity": 0.1,
     }
 
-    hover_style_2 = {"fillOpacity": 0.7}
 
-    DEFAULT_MAP_SPECS = dict(height=450, width=600) 
-    map_specs = DEFAULT_MAP_SPECS
-    m = leafmap.Map(center=[st.session_state["lat"], st.session_state["lon"]], zoom=13,
-                    height=map_specs['height'],
-                    width=map_specs['width'])
-    
-    m.add_geojson(postalCodesData,layer_name="Postal codes",
-            style=style_1,hover_style=hover_style_1)
 
-    #We obtain turnovers data for current postalCode
-    turnoversUrl = 'http://localhost:8000/turnovers/{0}/{1}/{2}'.format(
+   
+    if cp:
+
+        DEFAULT_MAP_SPECS = dict(height=450, width=600) 
+        map_specs = DEFAULT_MAP_SPECS
+
+        #We obtain turnovers data for current postalCode
+        turnoversUrl = 'http://localhost:8000/turnovers/{0}/{1}/{2}'.format(
             datetime.strftime(st.session_state["startDate"],'%Y-%m-%d'),
             datetime.strftime(st.session_state["endDate"],'%Y-%m-%d'),cp)
             
-    turnoversData = requests.get(turnoversUrl).json()
+        turnoversData = requests.get(turnoversUrl).json()
     
-  
-    #And obtain geometry from cached geometries
-    turnoversGeometry = getGeometryFromPropertyAndValue(postalCodesData,
+        #And obtain geometry from cached geometries
+        turnoversGeometry = getGeometryFromPropertyAndValue(postalCodesData,
                             "code", st.session_state["zipcode"])
-    #Now we mix turnoversData with geometry into a Feature, so that it can be added as Geojson layer
-    turnoversFeature = geojson.Feature(geometry=turnoversGeometry,
+        centroid = getGeometryCentroid(turnoversGeometry)
+        st.write(centroid)
+        #Now we mix turnoversData with geometry into a Feature, so that it can be added as Geojson layer
+        turnoversFeature = geojson.Feature(geometry=turnoversGeometry,
                         properties= {id(x): x for x in turnoversData["rows"]})
    
+        
+        #Lets write turnovers by age and gender in a file, so that
+        #it can be included in a layer
+
+        turnoversByAgeAndGender = Feature(geometry=turnoversGeometry,
+                              properties = processTurnovers(turnoversFeature,
+                              st.session_state['zipcode']))
+        
+        (file,fileName)=tempfile.mkstemp(prefix='tmp')
+        with open(fileName,'w',encoding="utf-8") as file:
+            file.write(turnoversByAgeAndGender.json())
+
+        #Lets keep data for timeseries in session
+        st.session_state['turnovers'] = turnoversFeature
+        st.session_state['turnoversByAgeAndGender'] = turnoversByAgeAndGender
+
+        #center on centroid of selected postcode
+        centroid = getGeometryCentroid(turnoversGeometry)
+        st.session_state["lat"] = centroid.y
+        st.session_state["lon"] = centroid.x
+
+        #Create map
+        m = leafmap.Map(center=[st.session_state["lat"], st.session_state["lon"]], zoom=13,
+                    height=map_specs['height'],
+                    width=map_specs['width'])
     
-    (file,fileName)=tempfile.mkstemp(prefix='tmp')
-    with open(fileName,'w',encoding="utf-8") as file:
-        json.dump(turnoversFeature,file)
-    st.write(json.dumps(turnoversFeature))
-    m.add_geojson(fileName,layer_name="Turnovers",
-            style=style_2,hover_style=hover_style_2,)
+    
+        
+        #Add turnovers layer for selected postal code
+        m.add_geojson(fileName,layer_name="Turnovers by age and gender ({0})".format(st.session_state["zipcode"]),
+            style=style_2,hover_style=hover_style)
+        #Add postal codes layer
+        m.add_geojson(postalCodesData,layer_name="Postal codes",
+            style=style_1,hover_style=hover_style)
+
 
                             
     components.html(
