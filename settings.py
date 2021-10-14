@@ -17,8 +17,6 @@ class Settings:
     COMBINED_GROUPS_FIELDS = list(itertools.product(AGE_GROUPS,GENDERS))
     COMBINED_GROUPS_DICT = dict.fromkeys([(x[0] + "-" + x[1]) 
                     for x in COMBINED_GROUPS_FIELDS],0)
-   
-
     
     #Database
     databaseUrl = "postgresql://adm:adm9999@localhost:5432/coolgeo"

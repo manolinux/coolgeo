@@ -212,3 +212,9 @@ Third commit:
 
 Manuel Cotallo
 10/13/2021
+
+ Fourth commit:
+ - Minimal bar char for turnovers by age and gender
+ 
+ Manuel Cotallo
+ 10/14/2021

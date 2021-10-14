@@ -33,7 +33,6 @@ def processTurnovers(tdata,postalCode):
         gender = tdata.properties[index]["p_gender"]
         amount = tdata.properties[index]["amount"]
         combinedTurnovers[age+"-"+gender] += amount
-        
     return combinedTurnovers
 
 
@@ -68,7 +67,7 @@ st.session_state['zipcode'] = '28013'
 st.session_state['turnovers'] = None
 st.session_state['turnoversByAgeAndGender'] = None
 
-col1, col2,col3 = st.columns((2,3,1))
+col1, col2,col3 = st.columns((1,2,1))
 with col1:
     with st.form("Form 1"): 
         d1 = st.date_input ("Start date" , max_value=datetime.strptime('2017-12-31','%Y-%M-%d'), 
@@ -139,9 +138,6 @@ with col2:
         "fillColor": "#00ff00",
         "fillOpacity": 0.1,
     }
-
-
-
    
     if cp:
 
@@ -159,7 +155,6 @@ with col2:
         turnoversGeometry = getGeometryFromPropertyAndValue(postalCodesData,
                             "code", st.session_state["zipcode"])
         centroid = getGeometryCentroid(turnoversGeometry)
-        st.write(centroid)
         #Now we mix turnoversData with geometry into a Feature, so that it can be added as Geojson layer
         turnoversFeature = geojson.Feature(geometry=turnoversGeometry,
                         properties= {id(x): x for x in turnoversData["rows"]})
@@ -189,8 +184,6 @@ with col2:
         m = leafmap.Map(center=[st.session_state["lat"], st.session_state["lon"]], zoom=13,
                     height=map_specs['height'],
                     width=map_specs['width'])
-    
-    
         
         #Add turnovers layer for selected postal code
         m.add_geojson(fileName,layer_name="Turnovers by age and gender ({0})".format(st.session_state["zipcode"]),
@@ -203,13 +196,17 @@ with col2:
                             
     components.html(
         m.to_html(),
-        width=map_specs['width'] * 2,
-        height=map_specs['height'] * 1.5,
+        width=map_specs['width'],
+        height=map_specs['height'],
         scrolling=False)
     
     #m.to_streamlit()
     
     
 with col3:
-    c1 = st.bar_chart(data=None, width=200, height=200, use_container_width=True)
-    c2 = st.bar_chart(data=None, width=200, height=200, use_container_width=True)
+    st.write("Turnovers by age and gender",allow_unsafe_html=True)
+    valuesForChart1 = st.session_state['turnoversByAgeAndGender'].properties
+    pdf1 = pd.DataFrame([k for k in valuesForChart1.values()],
+            index=[k[0]+"-"+k[1] for k in Settings.COMBINED_GROUPS_FIELDS])
+    ch1 = st.bar_chart(pdf1,use_container_width=True,width=500,height=200)
+    
