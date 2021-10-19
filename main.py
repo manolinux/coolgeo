@@ -110,10 +110,12 @@ def create_app():
                         postalCodes = []
                         for record in resultSet:
                             postalCodes.append(dict(record))
+                        app.postalCodes = postalCodes
                     except Exception as e:
                         #Something wrong
-                        pass
-                    app.postalCodes = postalCodes
+                        app.postalCodes = []
+                        app.logger.log(str(e))
+                    
 
     @app.on_event("shutdown")
     async def shutdown():
