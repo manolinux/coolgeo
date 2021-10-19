@@ -13,7 +13,6 @@ asyncpg
 geojson_pydantic
 geopandas
 streamlit
-streamlit-folium
 streamlit-keplergl
 here-map-widget-for-jupyter
 git+git://github.com/giswqs/whitebox
