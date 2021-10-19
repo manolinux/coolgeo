@@ -1,0 +1,24 @@
+<html>
+  <head>
+   <script src="./streamlit.js"></script>
+   <script>
+   function onRender(event) {
+      const data = event.detail
+      
+      const input = document.getElementsByName("component")[0]
+      input.value = data.value;
+      Streamlit.setFrameHeight()
+    }
+  
+  function init() {
+    top.Streamlit = Streamlit
+    Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender)
+    Streamlit.setComponentReady()
+    Streamlit.setFrameHeight()
+  }
+  </script>
+  </head>
+  <body onload="init()">
+    <input type="hidden" name="component" value=""/>
+  </body>
+  </html>  
