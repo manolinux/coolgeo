@@ -2,11 +2,12 @@
 #Start Postgres 11
 /etc/init.d/postgresql start
 
-#Configure Postgis 2.5
-su  postgres -c psql < /var/lib/postgresql/enable_postgis.sql
-
 #Create database 
 su postgres -c /var/lib/postgresql/create_db.sh
+
+# Configure Postgis 2.5
+su  postgres -c psql < /var/lib/postgresql/enable_postgis.sql
+
 
 #Grant permissions
 su postgres -c "psql --set USER_RWX=$USER_RWX --set USER_RX=$USER_RX --set PASS_RWX=$PASS_RWX --set PASS_RX=$PASS_RX < /var/lib/postgresql/grant_permissions.sql"
