@@ -26,8 +26,8 @@ COPY supervisor.conf /app/
 COPY *.csv /var/lib/postgresql/
 RUN . bin/activate && pip3 install -r /app/requirements.txt
 COPY *.py /app/
-RUN mkdir /app/component
-COPY component/* /app/component
+RUN mkdir /app/communication
+COPY component/* /app/communication
 COPY supervisor.conf /app/
 ENTRYPOINT ["/app/start.sh"]
 EXPOSE 8000
