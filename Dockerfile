@@ -24,9 +24,10 @@ COPY import_data.sh /var/lib/postgresql/
 COPY *.sql /var/lib/postgresql/
 COPY supervisor.conf /app/
 COPY *.csv /var/lib/postgresql/
-COPY *.vrt /var/lib/postgresql/
 RUN . bin/activate && pip3 install -r /app/requirements.txt
 COPY *.py /app/
+RUN mkdir /app/component
+COPY component/* /app/component
 COPY supervisor.conf /app/
 ENTRYPOINT ["/app/start.sh"]
 EXPOSE 8000
