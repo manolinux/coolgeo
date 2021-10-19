@@ -127,7 +127,7 @@ CARTODB TECHNICAL INTERVIEW TEST
   
   * Run streamlit (not required)
 
-    $ streamlit run streamlit_folium_app.py & disown
+    $ streamlit run streamlit_app.py & disown
 
     Disown is a BASH extension, so if not running bash, we could use nohup
     $ nohup uvicorn --reload --port 8000 main:app &
@@ -218,3 +218,8 @@ Manuel Cotallo
  
  Manuel Cotallo
  10/14/2021
+
+ Fifth commit:
+ - Improvements in communication map/form, so that when a postal code is clicked, it's info
+ is selected in form, and data reloaded
+ 10/19/2021
