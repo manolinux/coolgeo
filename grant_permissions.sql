@@ -1,5 +1,5 @@
 \connect coolgeo;
-ALTER DATABASE your_db SET search_path=public,postgis;
+ALTER DATABASE coolgeo SET search_path=public,postgis;
 DROP TABLE IF EXISTS paystats CASCADE;
 DROP TABLE IF EXISTS postal_codes CASCADE;
 CREATE TABLE postal_codes (the_geom GEOMETRY, code INTEGER, id INTEGER PRIMARY KEY);
