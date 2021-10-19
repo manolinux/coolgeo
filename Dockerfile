@@ -15,7 +15,7 @@ RUN apt-get update
 RUN apt-get install postgresql postgresql-contrib postgresql-11-postgis-2.5 postgresql-11-postgis-2.5-scripts libpq-dev vim strace lsof -y
 RUN apt-get install gdal-bin -y
 RUN apt-get autoclean && apt-get clean
-RUN python3 -m venv .
+RUN python3 -m venv /app
 RUN mkdir /app/log
 COPY requirements.txt /app/
 COPY start.sh /app/
